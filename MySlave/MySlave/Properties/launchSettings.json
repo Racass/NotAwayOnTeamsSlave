@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "MySlave": {
+      "commandName": "Project"
+    },
+    "Installer": {
+      "commandName": "Project",
+      "commandLineArgs": "INS"
+    }
+  }
+}

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.EventLog;
 using MySlave.Factory.RepositoryFactory;
 using MySlave.Factory.ServiceFactory;
 using MySlave.Repository;
@@ -18,6 +20,50 @@ namespace MySlave
         {
             ShowHeaders();
 
+            StartWorkers(args);
+        }
+        private static IHostBuilder CreateHostBuilder(string[] args)
+        {
+            Console.WriteLine($"Host builder...");
+            return Host.CreateDefaultBuilder(args)
+                .UseWindowsService(options =>
+                {
+                    options.ServiceName = "MySlave";
+                })
+                .ConfigureLogging(options =>
+                {
+                    if (OperatingSystem.IsWindows())
+                        options.AddFilter<EventLogLoggerProvider>(level => level >= LogLevel.Information);
+                })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddScoped<IApplicationServiceFactory<ITeamsService>, TeamsServiceFactory>();
+                    services.AddScoped<IApplicationRepositoryFactory<ITeamsRepository>, TeamsRepositoryFactory>();
+                    services.AddHostedService<TeamsWorker>();
+
+                    if (OperatingSystem.IsWindows())
+                    {
+                        services.Configure<EventLogSettings>(config =>
+                        {
+                            config.LogName = "MySlave Teams";
+                            config.SourceName = "MySlave";
+                        });
+                    }
+                });
+        }
+        static void ShowHeaders()
+        {
+            Console.WriteLine("#################################");
+            Console.WriteLine("#################################");
+            Console.WriteLine("######### RCA Present's");
+            Console.WriteLine("######### Simple Teams Slave");
+            Console.WriteLine($"######### Version: {typeof(Program).Assembly.GetName().Version}");
+            Console.WriteLine($"######### For possible arguments, send MAN");
+            Console.WriteLine("#################################");
+            Console.WriteLine("#################################");
+        }
+        private static void StartWorkers(string[] args)
+        {
             try
             {
                 CreateHostBuilder(args).Build().Run();
@@ -34,29 +80,6 @@ namespace MySlave
                     temp = temp.InnerException;
                 }
             }
-        }
-
-        private static IHostBuilder CreateHostBuilder(string[] args)
-        {
-            Console.WriteLine($"Host builder...");
-            return Host.CreateDefaultBuilder(args)
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.AddScoped<IApplicationServiceFactory<ITeamsService>, TeamsServiceFactory>();
-                    services.AddScoped<IApplicationRepositoryFactory<ITeamsRepository>, TeamsRepositoryFactory>();
-                    services.AddHostedService<TeamsWorker>();
-                });
-        }
-
-        static void ShowHeaders()
-        {
-            Console.WriteLine("#################################");
-            Console.WriteLine("#################################");
-            Console.WriteLine("######### RCA Present's");
-            Console.WriteLine("######### Simple Teams Slave");
-            Console.WriteLine($"######### Version: {typeof(Program).Assembly.GetName().Version}");
-            Console.WriteLine("#################################");
-            Console.WriteLine("#################################");
         }
     }
 }

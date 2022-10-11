@@ -1,0 +1,1 @@
+sc.exe create "MySlave Service" binpath="C:\Users\rafaelfel\Documents\GIT_personal\NotAwayOnTeamsSlave\MySlave\MySlave\bin\Release\net6.0-windows7.0\win-x64\publish\win-x64\MySlave.exe" start=auto
